@@ -357,17 +357,35 @@ function selUser(u,el){
   el.classList.add('sel'); selectedUser=u;
   $('login-btn').disabled=false;
 }
+const LOCAL_USERS = {
+  ruveyda: {id:'1', username:'ruveyda', display_name:'Rüveyda Civan',  avatar_color:'blue'},
+  can:     {id:'2', username:'can',     display_name:'Can Özçelik',    avatar_color:'green'},
+  fatih:   {id:'3', username:'fatih',   display_name:'Fatih Özçelik',  avatar_color:'purple'},
+};
+
 async function doLogin(){
   if(!selectedUser)return;
   $('login-btn').textContent='Giriş yapılıyor...'; $('login-btn').disabled=true;
+  $('login-err').style.display='none';
   try{
-    const{data,error}=await sb.from('users').select('*').eq('username',selectedUser).single();
-    if(error||!data)throw new Error('Kullanıcı bulunamadı');
+    // 3 saniye içinde Supabase'den kullanıcıyı çek, yoksa yerel kullan
+    const fetchPromise = sb.from('users').select('*').eq('username',selectedUser).single();
+    const timeoutPromise = new Promise((_,reject) => setTimeout(()=>reject(new Error('timeout')),3000));
+    let data;
+    try {
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+      data = result.data || LOCAL_USERS[selectedUser];
+    } catch {
+      // Supabase yavaş veya bağlantı yok — yerel kullanıcıyla devam et
+      data = LOCAL_USERS[selectedUser];
+    }
+    if(!data) throw new Error('Kullanıcı bulunamadı');
     currentUser=data;
     $('login').classList.remove('show');
     await startApp();
   }catch(e){
-    $('login-err').textContent=e.message;$('login-err').style.display='block';
+    $('login-err').textContent=e.message||'Giriş başarısız';
+    $('login-err').style.display='block';
     $('login-btn').textContent='Giriş Yap';$('login-btn').disabled=false;
   }
 }
@@ -386,16 +404,27 @@ function showLogoutSheet(){
 
 // ── APP START ──────────────────────────────────────────
 async function startApp(){
+  // Önce loading'i kapat, login'i göster — Supabase'i beklemeden
+  $('loading').style.display='none';
   $('app').classList.add('show');
+
   const parts=(currentUser.display_name||'').split(' ');
   const ini=((parts[0]?.[0]||'')+( parts[1]?.[0]||'')).toUpperCase();
   $('hdr-user').textContent=ini;
   const colors={ruveyda:'var(--blue)',can:'var(--green)',fatih:'#6B21A8'};
   $('hdr-user').style.background=colors[currentUser.username]||'var(--green)';
-  await Promise.all([loadOrders(),loadVehicles(),loadAddresses(),loadIhbarlar(),loadNotifHistory()]);
-  setupRealtime();
+
+  // Dashboard'u hemen göster, veri gelince güncelle
   showPage('dashboard');
-  $('loading').style.display='none';
+
+  // Verileri arka planda yükle
+  try {
+    await Promise.all([loadOrders(),loadVehicles(),loadAddresses(),loadIhbarlar(),loadNotifHistory()]);
+    renderCurrent();
+    setupRealtime();
+  } catch(e) {
+    showToast('Veri yüklenirken hata: '+e.message, 'warn');
+  }
 }
 
 function setupRealtime(){
@@ -1259,11 +1288,9 @@ function closeSheet(){$('sheet-overlay').classList.remove('open');}
 
 // ── INIT ──────────────────────────────────────────────
 window.addEventListener('load',()=>{
-  // Auto-login check or show login
-  setTimeout(()=>{
-    $('loading').style.display='none';
-    $('login').classList.add('show');
-  },800);
+  // Loading ekranını hızla kapat, login göster
+  $('loading').style.display='none';
+  $('login').classList.add('show');
 });
 </script>
 </body>
