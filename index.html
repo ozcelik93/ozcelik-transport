@@ -749,7 +749,7 @@ function renderDashboard() {
         </td>
         <td><div style="font-weight:600">${o.musteri}</div><div style="font-size:11px;color:var(--text2)">${o.yetkili||'—'}</div></td>
         <td style="font-size:12px">${o.yukleme||'—'} → ${o.teslimat||'—'}</td>
-        <td style="font-size:12px">${fmtDate(o.yuktar)}</td><td style="font-size:12px">${fmtDate(o.teslimattar)}</td>
+        <td style="font-size:12px">${fmtDate(o.yuktar)}</td><td style="font-size:12px;color:var(--blue-text);font-weight:600">${fmtDate(o.eta_arrival||o.bosaltma_tar||o.teslimattar)}</td>
         <td style="font-size:13px;font-weight:700;color:var(--green)">€${fmt((o.navlun||0)+(o.gumruk||0)+(o.sig||0)+(o.ek||0))}</td>
         <td><span class="badge ${sm.b}">${o.durum}</span></td>
       </tr>`;}).join('')}</tbody></table></div></div>
@@ -804,7 +804,7 @@ function renderOrders() {
       </div>
     </div>
     <div class="card"><div class="tbl-wrap"><table style="min-width:1050px">
-      <thead><tr><th>Sipariş No</th><th>Müşteri</th><th>Araç / Nakliyeci</th><th>Yükleme</th><th>Teslimat</th><th>Yük.Tar.</th><th>Tes.Tar.</th><th>Navlun/Top.</th><th>Durum</th><th>İşlemler</th></tr></thead>
+      <thead><tr><th>Sipariş No</th><th>Müşteri</th><th>Araç / Nakliyeci</th><th>Yükleme</th><th>Teslimat</th><th>Yük.Tar.</th><th>ETA</th><th>Navlun/Top.</th><th>Durum</th><th>İşlemler</th></tr></thead>
       <tbody>${f.map(o=>{
         const sm=statusMap[o.durum]||statusMap['Yeni Sipariş'];
         const top=(o.navlun||0)+(o.gumruk||0)+(o.sig||0)+(o.ek||0);
@@ -820,7 +820,7 @@ function renderOrders() {
           <td><div style="font-weight:600">${o.musteri}</div><div style="font-size:11px;color:var(--text2)">${o.yetkili||'—'}</div></td>
           <td>${aInf}</td>
           <td style="font-size:12px">${o.yukleme||'—'}</td><td style="font-size:12px">${o.teslimat||'—'}</td>
-          <td style="font-size:12px">${fmtDate(o.yuktar)}</td><td style="font-size:12px">${fmtDate(o.teslimattar)}</td>
+          <td style="font-size:12px">${fmtDate(o.yuktar)}</td><td style="font-size:12px;color:var(--blue-text);font-weight:600">${fmtDate(o.eta_arrival||o.bosaltma_tar||o.teslimattar)}</td>
           <td><div style="font-size:13px;font-weight:700;color:var(--green)">€${fmt(top)}</div><div style="font-size:10px;color:var(--text2)">Navlun: €${fmt(o.navlun||0)}</div></td>
           <td><select class="sstat ${sm.cls}" onchange='chStatus(${JSON.stringify(o.id)},this.value)' style="padding:3px 18px 3px 8px">
             ${Object.keys(statusMap).map(k=>`<option value="${k}"${o.durum===k?' selected':''}>${k}</option>`).join('')}
@@ -891,17 +891,21 @@ function openOrderDetail(id) {
         <div style="font-weight:600">${o.yukleme||'—'}</div>
         <div style="font-size:12px;color:var(--text2)">Tarih: <strong>${fmtDate(o.yuktar)}</strong></div>
         <div style="font-size:11px;color:var(--text2)">Çıkış Gümrüğü: ${o.cikis_g||'—'}</div>
+        ${(o.extra_yuklemeler||[]).length?`<div style="margin-top:3px;border-top:1px dashed #c8e6c9;padding-top:3px">${(o.extra_yuklemeler).map((ey,i)=>`<div style="font-size:11px;color:var(--green-text)">+Yük.${i+2}: ${ey.adres||'—'} ${ey.tarih?'· '+fmtDate(ey.tarih):''}</div>`).join('')}</div>`:''}
       </div>
       <div style="padding:11px 13px;border-bottom:1px solid var(--border);background:var(--red-bg)">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--red-text);margin-bottom:3px">🎯 Teslimat</div>
         <div style="font-weight:600">${o.teslimat||'—'}</div>
-        <div style="font-size:12px;color:var(--text2)">Tarih: <strong>${fmtDate(o.teslimattar)}</strong></div>
-        <div style="font-size:11px;color:var(--text2)">Varış Gümrüğü: ${o.varis_g||'—'}</div><div style="font-size:11px;color:var(--text2)">Antrepo: ${o.gumruk_antrepo||'—'}</div>
+        <div style="font-size:12px;color:var(--text2)">Boşaltma: <strong>${fmtDate(o.bosaltma_tar)}</strong>${o.eta_arrival?` · <span style="color:var(--blue-text)">ETA: <strong>${fmtDate(o.eta_arrival)}</strong></span>`:''}</div>
+        <div style="font-size:11px;color:var(--text2)">Fiili: ${fmtDate(o.teslimattar)} · Gümrük: ${o.varis_g||'—'}</div>
+        <div style="font-size:11px;color:var(--text2)">Antrepo: ${o.gumruk_antrepo||'—'}</div>
+        ${(o.extra_bosaltmalar||[]).length?`<div style="margin-top:3px;border-top:1px dashed #fcc;padding-top:3px">${(o.extra_bosaltmalar).map((eb,i)=>`<div style="font-size:11px;color:var(--red-text)">+Boş.${i+2}: ${eb.adres||'—'} ${eb.tarih?'· '+fmtDate(eb.tarih):''}</div>`).join('')}</div>`:''}
       </div>
       <div style="padding:11px 13px;border-right:1px solid var(--border)">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:3px">Yük</div>
         <div style="font-weight:600">${o.yuk||'—'}</div>
-        <div style="font-size:12px;color:var(--text2)">${o.ambalaj||''} ${o.kg?'· '+fmt(o.kg)+' kg':''} ${o.hacim?'· '+o.hacim+' m³':''}</div>
+        <div style="font-size:12px;color:var(--text2)">${o.ambalaj||''} ${o.adet?'· '+o.adet+' palet':''}  ${o.kg?'· '+fmt(o.kg)+' kg':''} ${o.hacim?'· '+o.hacim+' m³':''}</div>
+        ${o.derece?`<div style="font-size:12px;font-weight:700;color:var(--blue-text)">🌡 ${o.derece}</div>`:''}
         <div style="font-size:11px;color:var(--text2)">Transit: ${o.transit||'—'} | TIR: ${o.tir||'—'}</div>
       </div>
       <div style="padding:11px 13px">
@@ -1029,17 +1033,50 @@ function openOrderForm(editId) {
       </div>
       <div class="fg"><span class="lbl">Gümrük Antrepo (Adres Defteri)</span><select class="inp" id="f-antrepo-sel" onchange="fillAntrepo(this)">${antrepoOpts}</select></div>
       <div class="fg"><span class="lbl">Gümrük Antrepo</span><input class="inp" id="f-antrepo" value="${o?.gumruk_antrepo||''}" placeholder="Antrepo / depo bilgisi"></div>
-      <div class="fg"><span class="lbl">Yükleme Tarihi</span><input class="inp" type="date" id="f-yt" value="${o?.yuktar||''}"></div>
-      <div class="fg"><span class="lbl">Teslimat Tarihi</span><input class="inp" type="date" id="f-tt" value="${o?.teslimattar||''}"></div>
+      <div class="fg"><span class="lbl">📅 Yükleme Tarihi</span><input class="inp" type="date" id="f-yt" value="${o?.yuktar||''}"></div>
+      <div class="fg"><span class="lbl">📅 Boşaltma Tarihi</span><input class="inp" type="date" id="f-bt" value="${o?.bosaltma_tar||''}"></div>
+      <div class="fg"><span class="lbl">🎯 ETA Arrival</span><input class="inp" type="date" id="f-eta" value="${o?.eta_arrival||''}"></div>
+      <div class="fg"><span class="lbl">✅ Teslimat Tarihi (Fiili)</span><input class="inp" type="date" id="f-tt" value="${o?.teslimattar||''}"></div>
       <div class="fg"><span class="lbl">TIR Karnesi No</span><input class="inp" id="f-tir" value="${o?.tir||''}" placeholder="TR-2024-XXXXX"></div>
       <div class="fg"><span class="lbl">Transit Ülkeler</span><input class="inp" id="f-tr" value="${o?.transit||''}" placeholder="Bulgaristan, Romanya..."></div>
+    </div>
+
+    <div class="fsec">
+      Ek Yükleme Noktaları
+      <button type="button" class="btn btn-xs btn-green" onclick="addYukRow()" style="margin-left:8px;padding:3px 8px">+ Ekle</button>
+    </div>
+    <div id="extra-yuk-list">
+      ${(o?.extra_yuklemeler||[]).map((ey,i)=>`
+      <div class="fg2" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;margin-bottom:6px;position:relative">
+        <div class="fg"><span class="lbl">Yükleme ${i+2} Adresi</span><input class="inp" value="${ey.adres||''}" oninput="window._extraYuk[${i}].adres=this.value"></div>
+        <div class="fg"><span class="lbl">Tarih</span><input class="inp" type="date" value="${ey.tarih||''}" oninput="window._extraYuk[${i}].tarih=this.value"></div>
+        <button type="button" onclick="removeExtraYuk(${i})" style="position:absolute;top:4px;right:6px;background:none;border:none;color:var(--red-text);cursor:pointer;font-size:16px">✕</button>
+      </div>`).join('')}
+    </div>
+
+    <div class="fsec">
+      Ek Boşaltma Noktaları
+      <button type="button" class="btn btn-xs btn-green" onclick="addBosRow()" style="margin-left:8px;padding:3px 8px">+ Ekle</button>
+    </div>
+    <div id="extra-bos-list">
+      ${(o?.extra_bosaltmalar||[]).map((eb,i)=>`
+      <div class="fg2" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;margin-bottom:6px;position:relative">
+        <div class="fg"><span class="lbl">Boşaltma ${i+2} Adresi</span><input class="inp" value="${eb.adres||''}" oninput="window._extraBos[${i}].adres=this.value"></div>
+        <div class="fg"><span class="lbl">Tarih</span><input class="inp" type="date" value="${eb.tarih||''}" oninput="window._extraBos[${i}].tarih=this.value"></div>
+        <button type="button" onclick="removeExtraBos(${i})" style="position:absolute;top:4px;right:6px;background:none;border:none;color:var(--red-text);cursor:pointer;font-size:16px">✕</button>
+      </div>`).join('')}
+    </div>
+
+    <div class="fg2">
     </div>
     <div class="fsec">Yük</div>
     <div class="fg2" style="margin-bottom:10px">
       <div class="fg"><span class="lbl">Yük Tanımı</span><input class="inp" id="f-yuk" value="${o?.yuk||''}"></div>
-      <div class="fg"><span class="lbl">Ambalaj</span><input class="inp" id="f-amb" value="${o?.ambalaj||''}" placeholder="Palet, koli..."></div>
+      <div class="fg"><span class="lbl">Ambalaj Türü</span><input class="inp" id="f-amb" value="${o?.ambalaj||''}" placeholder="Palet, koli, big bag..."></div>
+      <div class="fg"><span class="lbl">Adet / Palet Sayısı</span><input class="inp" type="number" id="f-adet" value="${o?.adet||''}" placeholder="33"></div>
       <div class="fg"><span class="lbl">Brüt Ağırlık (kg)</span><input class="inp" type="number" id="f-kg" value="${o?.kg||''}"></div>
       <div class="fg"><span class="lbl">Hacim (m³)</span><input class="inp" type="number" id="f-hcm" value="${o?.hacim||''}"></div>
+      <div class="fg"><span class="lbl">🌡 Sıcaklık / Derece (°C)</span><input class="inp" id="f-derece" value="${o?.derece||''}" placeholder="+2°C / +8°C veya Donmuş -18°C"></div>
     </div>
     <div class="fsec">Navlun & Giderler</div>
     <div class="fg4" style="margin-bottom:10px">
@@ -1067,6 +1104,8 @@ function openOrderForm(editId) {
       if(o.yuk_ulke && $('f-yuk-ulke')) $('f-yuk-ulke').value=o.yuk_ulke;
       if(o.tes_ulke && $('f-tes-ulke')) $('f-tes-ulke').value=o.tes_ulke;
     }
+    window._extraYuk = o?.extra_yuklemeler ? [...o.extra_yuklemeler] : [];
+    window._extraBos = o?.extra_bosaltmalar ? [...o.extra_bosaltmalar] : [];
     // Taslak varsa geri yükle (sadece yeni sipariş formunda)
     if(!editId && Object.keys(orderDraft).length>0) {
       const d=orderDraft;
@@ -1111,6 +1150,32 @@ function saveDraft(){
 }
 
 function togArac(){ const d=$('f-tip')?.value==='dis'; $('fg-oz').style.display=d?'none':'flex'; $('fg-dis-f').style.display=d?'flex':'none'; $('fg-dis-p').style.display=d?'flex':'none'; $('fg-dis-n').style.display=d?'flex':'none'; }
+
+// ── EK YÜKLEME / BOŞALTMA ──────────────────────
+function renderExtraYukList(){
+  const c=$('extra-yuk-list'); if(!c) return;
+  c.innerHTML=(window._extraYuk||[]).map((ey,i)=>`
+    <div class="fg2" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;margin-bottom:6px;position:relative">
+      <div class="fg"><span class="lbl">Yükleme ${i+2} Adresi</span><input class="inp" value="${ey.adres||''}" oninput="window._extraYuk[${i}].adres=this.value" placeholder="Adres, Şehir, Ülke"></div>
+      <div class="fg"><span class="lbl">Tarih</span><input class="inp" type="date" value="${ey.tarih||''}" oninput="window._extraYuk[${i}].tarih=this.value"></div>
+      <button type="button" onclick="removeExtraYuk(${i})" style="position:absolute;top:4px;right:6px;background:none;border:none;color:var(--red-text);cursor:pointer;font-size:18px;line-height:1">✕</button>
+    </div>`).join('');
+}
+function renderExtraBosList(){
+  const c=$('extra-bos-list'); if(!c) return;
+  c.innerHTML=(window._extraBos||[]).map((eb,i)=>`
+    <div class="fg2" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;margin-bottom:6px;position:relative">
+      <div class="fg"><span class="lbl">Boşaltma ${i+2} Adresi</span><input class="inp" value="${eb.adres||''}" oninput="window._extraBos[${i}].adres=this.value" placeholder="Adres, Şehir, Ülke"></div>
+      <div class="fg"><span class="lbl">Tarih</span><input class="inp" type="date" value="${eb.tarih||''}" oninput="window._extraBos[${i}].tarih=this.value"></div>
+      <button type="button" onclick="removeExtraBos(${i})" style="position:absolute;top:4px;right:6px;background:none;border:none;color:var(--red-text);cursor:pointer;font-size:18px;line-height:1">✕</button>
+    </div>`).join('');
+}
+function addYukRow(){ window._extraYuk=window._extraYuk||[]; window._extraYuk.push({adres:'',tarih:''}); renderExtraYukList(); }
+function addBosRow(){ window._extraBos=window._extraBos||[]; window._extraBos.push({adres:'',tarih:''}); renderExtraBosList(); }
+function removeExtraYuk(i){ window._extraYuk.splice(i,1); renderExtraYukList(); }
+function removeExtraBos(i){ window._extraBos.splice(i,1); renderExtraBosList(); }
+function updateExtraYuk(i,key,val){ if(window._extraYuk[i]) window._extraYuk[i][key]=val; }
+function updateExtraBos(i,key,val){ if(window._extraBos[i]) window._extraBos[i][key]=val; }
 
 function fillYukleme(sel){
   const a=addresses.find(x=>x.id==sel.value); if(!a) return;
@@ -1171,7 +1236,10 @@ async function saveOrder() {
     yukleme:$('f-yuk-yer')?.value||'', teslimat:$('f-tes')?.value||'',
     yuk_sokak:$('f-yuk-sokak')?.value||'', yuk_sehir:$('f-yuk-sehir')?.value||'', yuk_posta:$('f-yuk-posta')?.value||'', yuk_ulke:$('f-yuk-ulke')?.value||'',
     tes_sokak:$('f-tes-sokak')?.value||'', tes_sehir:$('f-tes-sehir')?.value||'', tes_posta:$('f-tes-posta')?.value||'', tes_ulke:$('f-tes-ulke')?.value||'',
-    yuktar:$('f-yt')?.value||null, teslimattar:$('f-tt')?.value||null,
+    yuktar:$('f-yt')?.value||null, bosaltma_tar:$('f-bt')?.value||null,
+    eta_arrival:$('f-eta')?.value||null, teslimattar:$('f-tt')?.value||null,
+    adet:parseFloat($('f-adet')?.value)||null, derece:$('f-derece')?.value||'',
+    extra_yuklemeler:window._extraYuk||[], extra_bosaltmalar:window._extraBos||[],
     yuk:$('f-yuk')?.value||'', ambalaj:$('f-amb')?.value||'', kg:parseFloat($('f-kg')?.value)||0, hacim:parseFloat($('f-hcm')?.value)||0,
     navlun:parseFloat($('f-nav')?.value)||0, gumruk:parseFloat($('f-gum')?.value)||0, sig:parseFloat($('f-sig')?.value)||0, ek:parseFloat($('f-ek')?.value)||0,
     para:$('f-para')?.value||'EUR', odeme:$('f-ode')?.value||'Prepaid',
@@ -1357,7 +1425,7 @@ function buildGroupedKonum(list,lang){
       '\nLoading         : '+(o.yukleme||'-')+
       '\nDelivery        : '+(o.teslimat||'-')+
       '\nCurrent Location: '+(o.konum||'-')+
-      '\nETA             : '+fmtDate(o.teslimattar)+
+      '\nETA             : '+fmtDate(o.eta_arrival||o.bosaltma_tar||o.teslimattar)+
       '\nGoods           : '+(o.yuk||'-')+(o.kg?' / '+fmt(o.kg)+' kg':'');
     return (i+1)+') '+(o.id||'')+
       '\nMüşteri Ref     : '+(o.musteri_sip||'-')+
@@ -1365,7 +1433,7 @@ function buildGroupedKonum(list,lang){
       '\nYükleme         : '+(o.yukleme||'-')+
       '\nTeslimat        : '+(o.teslimat||'-')+
       '\nMevcut Konum    : '+(o.konum||'-')+
-      '\nTahmini Varış   : '+fmtDate(o.teslimattar)+
+      '\nTahmini Varış   : '+fmtDate(o.eta_arrival||o.bosaltma_tar||o.teslimattar)+
       '\nYük             : '+(o.yuk||'-')+(o.kg?' / '+fmt(o.kg)+' kg':'');
   }).join('\n\n');
   const body=lang==='EN'
